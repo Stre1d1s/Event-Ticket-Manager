@@ -18,6 +18,10 @@ public class StartingDate {
         cost = c;
     }
 
+    public StartingDate() {
+    }
+    
+    
     public Date getDate() {
         return date;
     }
