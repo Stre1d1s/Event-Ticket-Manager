@@ -14,8 +14,6 @@ public class MainServer {
             String strin, strout;
             strin = instream.readLine();
 
-            System.out.println("The time from server is: " + strin);
-
             instream.close();
             outstream.close();
             sock.close();
