@@ -1,5 +1,3 @@
-package DBServer.src;
-
 import java.util.Date;
 
 public class StartingDate {

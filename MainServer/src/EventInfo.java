@@ -1,5 +1,3 @@
-package DBServer.src;
-
 public class EventInfo {
     private String title;
     private String type;
@@ -15,6 +13,8 @@ public class EventInfo {
 
     public EventInfo() {
     }
+    
+    
     
     public String getTitle() {
         return title;
@@ -51,5 +51,7 @@ public class EventInfo {
     @Override
     public String toString() {
         return "EventInfo{" + "title=" + title + ", type=" + type + ", eventDate=" + eventDate + ", balance=" + balance + '}';
-    }    
+    }
+    
+    
 }

@@ -1,5 +1,3 @@
-package DBServer.src;
-
 public class UserInfo {
     private String fullname;
     private int phone;
