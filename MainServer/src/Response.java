@@ -9,6 +9,7 @@ import java.io.Serializable;
  */
 public class Response implements Serializable {
     private boolean success;   // True αν η λειτουργία ήταν επιτυχής
+    private boolean admin;
     private String message;    // Περιγραφικό μήνυμα
     private UserInfo user;
     private EventInfo event;
@@ -16,6 +17,12 @@ public class Response implements Serializable {
     // Constructors
     public Response(boolean success, String message) {
         this.success = success;
+        this.message = message;
+    }
+
+    public Response(boolean success, boolean admin, String message) {
+        this.success = success;
+        this.admin = admin;
         this.message = message;
     }
 
@@ -31,6 +38,7 @@ public class Response implements Serializable {
 
     // Getters
     public boolean isSuccess() { return success; }
+    public boolean isAdmin() { return admin; }
     public String getMessage() { return message; }
     public UserInfo getUserInfo() { return user; }
     public EventInfo getEventInfo() { return event; }
