@@ -14,8 +14,6 @@ public class EventInfo {
     public EventInfo() {
     }
     
-    
-    
     public String getTitle() {
         return title;
     }

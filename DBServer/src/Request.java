@@ -1,5 +1,7 @@
 //icsd21049 Aristeidis Papadopoulos
 
+package DBServer.src;
+
 import java.io.Serializable;
 
 /**
@@ -22,7 +24,6 @@ public class Request implements Serializable {
     private UserInfo user;
     private String fullname;
     private EventInfo event;
-    private String title;
 
     // Constructors
     public Request(RequestType type, UserInfo user) {
