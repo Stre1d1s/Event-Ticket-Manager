@@ -49,6 +49,8 @@ public class DBServer {
                 return userLogout(request.getFullname());
             case CREATE_EVENT:
                 return createEvent(request.getEventInfo());
+            case DELETE_EVENT:
+                return deleteEvent(request.getEventInfo());
             case REQUEST_EVENT_INFO:
                 return requestEventInfo(request.getEventInfo());
             case CANCEL_EVENT_ORDER:
@@ -76,6 +78,10 @@ public class DBServer {
 
     private Response createEvent(EventInfo event) {
         return new Response(true, "Event created successfully");
+    }
+
+    private Response deleteEvent(EventInfo event) {
+        return new Response(true, "Event deleted successfully");
     }
 
     private Response requestEventInfo(EventInfo event) {

@@ -1,49 +1,92 @@
 import java.net.*;
 import java.io.*;
+import java.rmi.*;
+import java.rmi.server.*;
+import java.rmi.registry.*;
+import java.util.*;
 
-public class MainServer {
-    private static final String SERVER_HOST = "localhost"; // Διεύθυνση Server
-    private static final int SERVER_PORT = 8888;
+public class MainServer extends UnicastRemoteObject implements Operations {
+    private static final String DB_SERVER_HOST = "localhost";
+    private static final int DB_SERVER_PORT = 8888;
+    private static final int RMI_PORT = 1099;
+    private static final String RMI_SERVICE_NAME = "TicketService";
 
-    private Response sendRequest(Request request) {
-        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
+    public MainServer() throws RemoteException {
+        super();
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Δημιουργία και εκκίνηση του MainServer
+            MainServer server = new MainServer();
             
-            oos.writeObject(request);  // Αποστολή αιτήματος
-            oos.flush();
-            return (Response) ois.readObject();  // Λήψη απάντησης
+            // Δημιουργία RMI registry
+            LocateRegistry.createRegistry(RMI_PORT);
+            System.out.println("RMI registry ready.");
             
-        } catch (IOException | ClassNotFoundException e) {
-            return new Response(false, "Σφάλμα δικτύου");
+            // Δημοσίευση του RMI service
+            Naming.rebind("rmi://localhost:" + RMI_PORT + "/" + RMI_SERVICE_NAME, server);
+            System.out.println("MainServer is ready and waiting for connections...");
+        } catch (Exception e) {
+            System.err.println("Server exception: " + e.toString());
+            e.printStackTrace();
         }
     }
 
-    public void userSignUp(UserInfo user){
-        Response response = sendRequest(new Request(Request.RequestType.USER_SIGNUP, user));
+    // Βοηθητική μέθοδος για επικοινωνία με τον DBServer μέσω sockets
+    private Response communicateWithDBServer(Request request) {
+        try (Socket socket = new Socket(DB_SERVER_HOST, DB_SERVER_PORT);
+             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
+            
+            oos.writeObject(request);
+            oos.flush();
+            return (Response) ois.readObject();
+            
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error communicating with DB Server: " + e.getMessage());
+            return new Response(false, "Database communication error");
+        }
     }
 
-    public void userDeleteUser(UserInfo user){
-        Response response = sendRequest(new Request(Request.RequestType.USER_DELETE, user));
+    // Υλοποίηση των μεθόδων του Operations interface
+    @Override
+    public Response userSignUp(UserInfo user) throws RemoteException {
+        return communicateWithDBServer(new Request(Request.RequestType.USER_SIGNUP, user));
     }
 
-    public void userLogin(UserInfo user){
-        Response response = sendRequest(new Request(Request.RequestType.USER_LOGIN, user));
+    @Override
+    public Response userDelete(UserInfo user) throws RemoteException {
+        return communicateWithDBServer(new Request(Request.RequestType.USER_DELETE, user));
     }
 
-    public void userLogout(UserInfo user){
-        Response response = sendRequest(new Request(Request.RequestType.USER_LOGOUT, user));
+    @Override
+    public Response userLogin(UserInfo user) throws RemoteException {
+        return communicateWithDBServer(new Request(Request.RequestType.USER_LOGIN, user));
     }
 
-    public void createEvent(EventInfo event){
-        Response response = sendRequest(new Request(Request.RequestType.CREATE_EVENT, event));
+    @Override
+    public Response userLogout(UserInfo user) throws RemoteException {
+        return communicateWithDBServer(new Request(Request.RequestType.USER_LOGOUT, user));
     }
 
-    public void requestEventInfo(EventInfo event){
-        Response response = sendRequest(new Request(Request.RequestType.REQUEST_EVENT_INFO, event));
+    @Override
+    public Response createEvent(EventInfo event) throws RemoteException {
+        return communicateWithDBServer(new Request(Request.RequestType.CREATE_EVENT, event));
     }
 
-    public void cancelEventOrder(EventInfo event){
-        Response response = sendRequest(new Request(Request.RequestType.CANCEL_EVENT_ORDER, event));
+    @Override
+    public Response requestEventInfo(EventInfo event) throws RemoteException {
+        return communicateWithDBServer(new Request(Request.RequestType.REQUEST_EVENT_INFO, event));
+    }
+
+    @Override
+    public Response cancelEventOrder(EventInfo event) throws RemoteException {
+        return communicateWithDBServer(new Request(Request.RequestType.CANCEL_EVENT_ORDER, event));
+    }
+
+    @Override
+    public Response getAvailableEvents() throws RemoteException {
+        return communicateWithDBServer(new Request(Request.RequestType.GET_AVAILABLE_EVENTS));
     }
 }

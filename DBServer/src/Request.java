@@ -16,8 +16,10 @@ public class Request implements Serializable {
         USER_LOGIN,
         USER_LOGOUT,
         CREATE_EVENT,
+        DELETE_EVENT,
         REQUEST_EVENT_INFO,
-        CANCEL_EVENT_ORDER
+        CANCEL_EVENT_ORDER,
+        GET_AVAILABLE_EVENTS
     }
 
     private RequestType type;  // Τύπος αίτηματος
@@ -26,6 +28,10 @@ public class Request implements Serializable {
     private EventInfo event;
 
     // Constructors
+    public Request(RequestType type) {
+        this.type = type;
+    }
+
     public Request(RequestType type, UserInfo user) {
         this.type = type;
         this.user = user;
