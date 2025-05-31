@@ -1,92 +1,104 @@
-import java.net.*;
+//ICSD21028 -- Konstantinos Katsaros
+
+import DataBaseServer.src.*;
 import java.io.*;
+import java.net.*;
 import java.rmi.*;
-import java.rmi.server.*;
 import java.rmi.registry.*;
-import java.util.*;
+import java.rmi.server.*;
+import java.util.concurrent.*;
 
-public class MainServer extends UnicastRemoteObject implements Operations {
-    private static final String DB_SERVER_HOST = "localhost";
-    private static final int DB_SERVER_PORT = 8888;
+public class MainServer extends UnicastRemoteObject implements ReservationSystem {
+    private static final int DB_PORT = 54321;
     private static final int RMI_PORT = 1099;
-    private static final String RMI_SERVICE_NAME = "TicketService";
-
+    private static final String DB_HOST = "localhost";
+    
+    private ExecutorService threadPool = Executors.newCachedThreadPool();
+    
     public MainServer() throws RemoteException {
         super();
     }
-
+    
     public static void main(String[] args) {
         try {
-            // Δημιουργία και εκκίνηση του MainServer
-            MainServer server = new MainServer();
-            
-            // Δημιουργία RMI registry
+            // Start RMI registry
             LocateRegistry.createRegistry(RMI_PORT);
-            System.out.println("RMI registry ready.");
             
-            // Δημοσίευση του RMI service
-            Naming.rebind("rmi://localhost:" + RMI_PORT + "/" + RMI_SERVICE_NAME, server);
-            System.out.println("MainServer is ready and waiting for connections...");
+            // Create and bind the server instance
+            MainServer server = new MainServer();
+            Naming.rebind("ReservationSystem", server);
+            System.out.println("MainServer ready...");
         } catch (Exception e) {
-            System.err.println("Server exception: " + e.toString());
+            System.err.println("Server exception: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
-    // Βοηθητική μέθοδος για επικοινωνία με τον DBServer μέσω sockets
-    private Response communicateWithDBServer(Request request) {
-        try (Socket socket = new Socket(DB_SERVER_HOST, DB_SERVER_PORT);
-             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())) {
+    
+    // Helper method to communicate with DatabaseServer
+    private Response sendRequestToDB(Request request) {
+        try (Socket socket = new Socket(DB_HOST, DB_PORT);
+             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())) {
             
-            oos.writeObject(request);
-            oos.flush();
-            return (Response) ois.readObject();
+            out.writeObject(request);
+            return (Response) in.readObject();
             
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println("Error communicating with DB Server: " + e.getMessage());
-            return new Response(false, "Database communication error");
+            System.err.println("Error communicating with DB server: " + e.getMessage());
+            return new Response(ResponseStatus.ERROR, "Database communication error", null);
         }
     }
-
-    // Υλοποίηση των μεθόδων του Operations interface
+    
+    // RMI Interface implementations
     @Override
-    public Response userSignUp(UserInfo user) throws RemoteException {
-        return communicateWithDBServer(new Request(Request.RequestType.USER_SIGNUP, user));
+    public Response registerUser(User user) throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.REGISTER_USER, user));
     }
-
+    
     @Override
-    public Response userDelete(UserInfo user) throws RemoteException {
-        return communicateWithDBServer(new Request(Request.RequestType.USER_DELETE, user));
+    public Response deleteUser(String username) throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.DELETE_USER, username));
     }
-
+    
     @Override
-    public Response userLogin(UserInfo user) throws RemoteException {
-        return communicateWithDBServer(new Request(Request.RequestType.USER_LOGIN, user));
+    public Response addEvent(Event event) throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.ADD_EVENT, event));
     }
-
+    
     @Override
-    public Response userLogout(UserInfo user) throws RemoteException {
-        return communicateWithDBServer(new Request(Request.RequestType.USER_LOGOUT, user));
+    public Response deactivateEvent(String eventId) throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.DEACTIVATE_EVENT, eventId));
     }
-
+    
     @Override
-    public Response createEvent(EventInfo event) throws RemoteException {
-        return communicateWithDBServer(new Request(Request.RequestType.CREATE_EVENT, event));
+    public Response getActiveEvents() throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.GET_EVENTS, null));
     }
-
+    
     @Override
-    public Response requestEventInfo(EventInfo event) throws RemoteException {
-        return communicateWithDBServer(new Request(Request.RequestType.REQUEST_EVENT_INFO, event));
+    public Response getEventDetails(String eventId) throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.GET_EVENT_DETAILS, eventId));
     }
-
+    
     @Override
-    public Response cancelEventOrder(EventInfo event) throws RemoteException {
-        return communicateWithDBServer(new Request(Request.RequestType.CANCEL_EVENT_ORDER, event));
+    public Response reserveTickets(Reservation reservation) throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.RESERVE_TICKETS, reservation));
     }
-
+    
     @Override
-    public Response getAvailableEvents() throws RemoteException {
-        return communicateWithDBServer(new Request(Request.RequestType.GET_AVAILABLE_EVENTS));
+    public Response processPayment(String reservationId) throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.PROCESS_PAYMENT, reservationId));
+    }
+    
+    @Override
+    public Response cancelReservation(String reservationId) throws RemoteException {
+        return sendRequestToDB(new Request(RequestType.CANCEL_RESERVATION, reservationId));
+    }
+    
+    @Override
+    public Response authenticateUser(String username, String password) throws RemoteException {
+        // This would need to be implemented with local user authentication
+        // or by adding AUTHENTICATE_USER to RequestType and handling in DataBaseManager
+        return new Response(ResponseStatus.ERROR, "Authentication not implemented", null);
     }
 }

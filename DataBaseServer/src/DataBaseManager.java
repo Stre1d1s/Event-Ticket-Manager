@@ -16,23 +16,51 @@ public class DataBaseManager {
 
     // Χειρισμός αιτημάτων
     public Response handleRequest(Request request) {
-        try {
-            return switch (request.getType()) {
-                case REGISTER_USER -> registerUser((User) request.getData());
-                case DELETE_USER -> deleteUser((String) request.getData());
-                case ADD_EVENT -> addEvent((Event) request.getData());
-                case DEACTIVATE_EVENT -> deactivateEvent((String) request.getData());
-                case GET_EVENTS -> getActiveEvents();
-                case GET_EVENT_DETAILS -> getEventDetails((String) request.getData());
-                case RESERVE_TICKETS -> reserveTickets((Reservation) request.getData());
-                case PROCESS_PAYMENT -> processPayment((String) request.getData());
-                case CANCEL_RESERVATION -> cancelReservation((String) request.getData());
-                default -> new Response(ResponseStatus.ERROR, "Unknown request type", null);
-            };
-        } catch (Exception e) {
-            return new Response(ResponseStatus.ERROR, "Error processing request: " + e.getMessage(), null);
+    try {
+        switch (request.getType()) {
+            case REGISTER_USER -> {
+                User user = (User) request.getData();
+                return registerUser(user);
+            }
+            case DELETE_USER -> {
+                String username = (String) request.getData();
+                return deleteUser(username);
+            }
+            case ADD_EVENT -> {
+                Event event = (Event) request.getData();
+                return addEvent(event);
+            }
+            case DEACTIVATE_EVENT -> {
+                String eventId = (String) request.getData();
+                return deactivateEvent(eventId);
+            }
+            case GET_EVENTS -> {
+                return getActiveEvents();
+            }
+            case GET_EVENT_DETAILS -> {
+                String eventId = (String) request.getData();
+                return getEventDetails(eventId);
+            }
+            case RESERVE_TICKETS -> {
+                Reservation reservation = (Reservation) request.getData();
+                return reserveTickets(reservation);
+            }
+            case PROCESS_PAYMENT -> {
+                String reservationId = (String) request.getData();
+                return processPayment(reservationId);
+            }
+            case CANCEL_RESERVATION -> {
+                String reservationId = (String) request.getData();
+                return cancelReservation(reservationId);
+            }
+            default -> {
+                return new Response(ResponseStatus.ERROR, "Unknown request type", null);
+            }
         }
+    } catch (Exception e) {
+        return new Response(ResponseStatus.ERROR, "Error processing request: " + e.getMessage(), null);
     }
+}
 
     // Μέθοδοι διαχείρισης δεδομένων
     private Response registerUser(User user) {
