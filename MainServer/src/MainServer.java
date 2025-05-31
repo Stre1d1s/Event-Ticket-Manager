@@ -1,4 +1,7 @@
 //ICSD21028 -- Konstantinos Katsaros
+//ICSD21049 -- Aristeidis Papadopoulos
+
+package MainServer.src;
 
 import DataBaseServer.src.*;
 import java.io.*;
