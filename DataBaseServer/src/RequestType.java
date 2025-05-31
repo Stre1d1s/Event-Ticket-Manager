@@ -1,0 +1,9 @@
+//ICSD21028 -- Konstantinos Katsaros
+
+package DataBaseServer.src;
+
+public enum RequestType {
+    REGISTER_USER, DELETE_USER, ADD_EVENT, DEACTIVATE_EVENT,
+    GET_EVENTS, GET_EVENT_DETAILS, RESERVE_TICKETS, CANCEL_RESERVATION,
+    PROCESS_PAYMENT
+}
