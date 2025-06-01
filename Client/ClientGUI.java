@@ -3,16 +3,9 @@
 
 package Client;
 
-import DataBaseServer.Event;
-import DataBaseServer.EventType;
-import DataBaseServer.Performance;
-import DataBaseServer.Reservation;
-import DataBaseServer.Response;
-import DataBaseServer.ResponseStatus;
-import DataBaseServer.User;
-import DataBaseServer.UserRole;
-import DataBaseServer.src.*;
 import MainServer.ReservationSystem;
+import DataBaseServer.*;
+import DataBaseServer.Event;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,6 +24,13 @@ public class ClientGUI extends JFrame {
     private JPanel loginPanel;
     private JPanel userPanel;
     private JPanel adminPanel;
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            ClientGUI client = new ClientGUI();
+            client.setVisible(true);
+        });
+    }
 
     public ClientGUI() {
         super("Ticket Reservation System");
@@ -456,12 +456,10 @@ public class ClientGUI extends JFrame {
                 JOptionPane.showMessageDialog(dialog, "Invalid date/time format", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-
-        Event clientEvent = new Event(currentUser, getTitle(), null);
         
         saveEventButton.addActionListener(e -> {
             try {
-                Response response = server.addEvent(event);
+                Response response = server.addEvent(event, currentUser);
                 JOptionPane.showMessageDialog(dialog, response.getMessage(), 
                     response.getStatus() == ResponseStatus.SUCCESS ? "Success" : "Error",
                     response.getStatus() == ResponseStatus.SUCCESS ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
@@ -498,10 +496,77 @@ public class ClientGUI extends JFrame {
         return panel;
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            ClientGUI client = new ClientGUI();
-            client.setVisible(true);
+    private void showLoginPanel() {
+        tabbedPane.removeAll();
+        tabbedPane.addTab("Login", loginPanel);
+    }
+    
+    private void showUserPanel() {
+        tabbedPane.removeAll();
+        tabbedPane.addTab("Events", userPanel);
+        tabbedPane.addTab("My Reservations", createReservationsPanel());
+        tabbedPane.addTab("Logout", createLogoutPanel());
+    }
+    
+    private void showAdminPanel() {
+        tabbedPane.removeAll();
+        tabbedPane.addTab("Manage Events", adminPanel);
+        tabbedPane.addTab("Logout", createLogoutPanel());
+    }
+    
+    private JPanel createReservationsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        DefaultListModel<Reservation> model = new DefaultListModel<>();
+        JList<Reservation> list = new JList<>(model);
+    
+        JButton refreshButton = new JButton("Refresh");
+        JButton cancelButton = new JButton("Cancel Reservation");
+    
+        refreshButton.addActionListener(e -> {
+            try {
+                Response response = server.getUserReservations(currentUser);
+                if (response.getStatus() == ResponseStatus.SUCCESS) {
+                    model.clear();
+                    ((List<Reservation>)response.getData()).forEach(model::addElement);
+                } else {
+                    JOptionPane.showMessageDialog(panel, response.getMessage(), 
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (RemoteException ex) {
+                JOptionPane.showMessageDialog(panel, 
+                "Error communicating with server: " + ex.getMessage(), 
+                "Connection Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
+    
+        cancelButton.addActionListener(e -> {
+            Reservation selected = list.getSelectedValue();
+            if (selected != null) {
+                try {
+                    Response response = server.cancelReservation(selected.getReservationId(), currentUser);
+                    JOptionPane.showMessageDialog(panel, response.getMessage(),
+                    response.getStatus() == ResponseStatus.SUCCESS ? "Success" : "Error",
+                    response.getStatus() == ResponseStatus.SUCCESS ? 
+                    JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
+                    refreshButton.doClick(); // Refresh τη λίστα
+                } catch (RemoteException ex) {
+                    JOptionPane.showMessageDialog(panel, 
+                        "Error communicating with server: " + ex.getMessage(), 
+                        "Connection Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(panel, 
+                "Please select a reservation first", 
+                "Warning", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+    
+        panel.add(new JScrollPane(list), BorderLayout.CENTER);
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(refreshButton);
+        buttonPanel.add(cancelButton);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+    
+        return panel;
     }
 }

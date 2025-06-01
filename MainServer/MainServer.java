@@ -10,6 +10,7 @@ import DataBaseServer.Reservation;
 import DataBaseServer.Response;
 import DataBaseServer.ResponseStatus;
 import DataBaseServer.User;
+import DataBaseServer.UserRole;
 
 import java.io.*;
 import java.net.*;
@@ -22,6 +23,7 @@ public class MainServer extends UnicastRemoteObject implements ReservationSystem
     private static final int DB_PORT = 54321;
     private static final int RMI_PORT = 1099;
     private static final String DB_HOST = "localhost";
+    private ConcurrentMap<String, UserRole> activeSessions = new ConcurrentHashMap<>();
     
     private ExecutorService threadPool = Executors.newCachedThreadPool();
     
@@ -58,6 +60,18 @@ public class MainServer extends UnicastRemoteObject implements ReservationSystem
             return new Response(ResponseStatus.ERROR, "Database communication error", null);
         }
     }
+
+    private Response checkSession(String username, UserRole requiredRole) {
+        if (!activeSessions.containsKey(username)) {
+            return new Response(ResponseStatus.ERROR, "User not authenticated", null);
+        }
+        
+        if (requiredRole != null && activeSessions.get(username) != requiredRole) {
+            return new Response(ResponseStatus.ERROR, "Insufficient privileges", null);
+        }
+        
+        return null;
+    }
     
     // RMI Interface implementations
     @Override
@@ -71,7 +85,10 @@ public class MainServer extends UnicastRemoteObject implements ReservationSystem
     }
     
     @Override
-    public Response addEvent(Event event) throws RemoteException {
+    public Response addEvent(Event event, String username) throws RemoteException {
+        Response sessionCheck = checkSession(username, UserRole.ADMIN);
+        if (sessionCheck != null) return sessionCheck;
+        
         return sendRequestToDB(new Request(RequestType.ADD_EVENT, event));
     }
     
@@ -101,14 +118,37 @@ public class MainServer extends UnicastRemoteObject implements ReservationSystem
     }
     
     @Override
-    public Response cancelReservation(String reservationId) throws RemoteException {
+    public Response cancelReservation(String reservationId, String username) throws RemoteException {
         return sendRequestToDB(new Request(RequestType.CANCEL_RESERVATION, reservationId));
+    }
+
+    @Override
+    public Response getUserReservations(String username) throws RemoteException {
+        Response sessionCheck = checkSession(username, null);
+        
+        if (sessionCheck != null) return sessionCheck;
+        
+        Request request = new Request(RequestType.GET_USER_RESERVATIONS, username);
+        Response response = sendRequestToDB(request);
+        
+        return response;
+    }
+
+    @Override
+    public Response logout(String username) throws RemoteException {
+        activeSessions.remove(username);
+        return new Response(ResponseStatus.SUCCESS, "Logged out successfully", null);
     }
     
     @Override
     public Response authenticateUser(String username, String password) throws RemoteException {
-        // This would need to be implemented with local user authentication
-        // or by adding AUTHENTICATE_USER to RequestType and handling in DataBaseManager
-        return new Response(ResponseStatus.ERROR, "Authentication not implemented", null);
+        String[] credentials = {username, password};
+        Response response = sendRequestToDB(new Request(RequestType.AUTHENTICATE_USER, credentials));
+        
+        if (response.getStatus() == ResponseStatus.SUCCESS) {
+            activeSessions.put(username, (UserRole) response.getData());
+        }
+        
+        return response;
     }
 }

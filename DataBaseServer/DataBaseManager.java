@@ -5,9 +5,11 @@ package DataBaseServer;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 public class DataBaseManager {
     private ConcurrentMap<String, User> users = new ConcurrentHashMap<>();
@@ -53,6 +55,13 @@ public class DataBaseManager {
             case CANCEL_RESERVATION -> {
                 String reservationId = (String) request.getData();
                 return cancelReservation(reservationId);
+            }
+            case AUTHENTICATE_USER -> {
+                String[] credentials = (String[]) request.getData();
+                return authenticateUser(credentials[0], credentials[1]);
+            }
+            case GET_USER_RESERVATIONS -> {
+                return getUserReservations((String) request.getData());
             }
             default -> {
                 return new Response(ResponseStatus.ERROR, "Unknown request type", null);
@@ -191,5 +200,32 @@ public class DataBaseManager {
         
         reservation.setCancelled(true);
         return new Response(ResponseStatus.SUCCESS, "Reservation cancelled successfully", null);
+    }
+
+    private Response getUserReservations(String username) {
+        List<String> reservationIds = userReservations.get(username);
+        if (reservationIds == null || reservationIds.isEmpty()) {
+            return new Response(ResponseStatus.ERROR, "User has no reservations", Collections.emptyList());
+        }
+        
+        List<Reservation> result = reservationIds.stream()
+            .map(reservations::get)  // Τώρα θα δουλέψει σωστά
+            .filter(res -> res != null && !res.isCancelled())
+            .collect(Collectors.toList());
+            
+        return new Response(ResponseStatus.SUCCESS, "Reservations retrieved", result);
+    }
+
+    private Response authenticateUser(String username, String password) {
+        User user = users.get(username);
+        if (user == null) {
+            return new Response(ResponseStatus.ERROR, "User not found", null);
+        }
+        
+        if (!user.getPassword().equals(password)) {
+            return new Response(ResponseStatus.ERROR, "Invalid password", null);
+        }
+        
+        return new Response(ResponseStatus.SUCCESS, "Authentication successful", user.getRole());
     }
 }
