@@ -1,9 +1,16 @@
 //ICSD21028 -- Konstantinos Katsaros
 //ICSD21049 -- Aristeidis Papadopoulos
 
-package MainServer.src;
+package MainServer;
 
-import DataBaseServer.src.*;
+import DataBaseServer.Event;
+import DataBaseServer.Request;
+import DataBaseServer.RequestType;
+import DataBaseServer.Reservation;
+import DataBaseServer.Response;
+import DataBaseServer.ResponseStatus;
+import DataBaseServer.User;
+
 import java.io.*;
 import java.net.*;
 import java.rmi.*;

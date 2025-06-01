@@ -1,7 +1,7 @@
 //ICSD21028 -- Konstantinos Katsaros
 //ICSD21049 -- Aristeidis Papadopoulos
 
-package DataBaseServer.src;
+package DataBaseServer;
 
 public enum RequestType {
     REGISTER_USER, DELETE_USER, ADD_EVENT, DEACTIVATE_EVENT,

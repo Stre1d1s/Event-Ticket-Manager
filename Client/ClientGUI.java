@@ -1,10 +1,19 @@
 //ICSD21028 -- Konstantinos Katsaros
 //ICSD21049 -- Aristeidis Papadopoulos
 
-package Client.src;
+package Client;
 
-import MainServer.src.ReservationSystem;
+import DataBaseServer.Event;
+import DataBaseServer.EventType;
+import DataBaseServer.Performance;
+import DataBaseServer.Reservation;
+import DataBaseServer.Response;
+import DataBaseServer.ResponseStatus;
+import DataBaseServer.User;
+import DataBaseServer.UserRole;
 import DataBaseServer.src.*;
+import MainServer.ReservationSystem;
+
 import javax.swing.*;
 import java.awt.*;
 import java.rmi.Naming;
@@ -447,6 +456,8 @@ public class ClientGUI extends JFrame {
                 JOptionPane.showMessageDialog(dialog, "Invalid date/time format", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
+
+        Event clientEvent = new Event(currentUser, getTitle(), null);
         
         saveEventButton.addActionListener(e -> {
             try {
